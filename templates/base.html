@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Food Waste Management{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --green:#2d6a4f; --green-l:#52b788; --cream:#f8f4ee;
+            --brown:#7c4f2a; --red:#c0392b; --text:#1a1a1a;
+            --muted:#666; --border:#ddd; --white:#ffffff;
+            --shadow:0 2px 12px rgba(0,0,0,.08);
+        }
+        body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--text); min-height:100vh; }
+
+        nav { background:var(--green); padding:0 1.5rem; display:flex; align-items:center; justify-content:space-between; height:56px; box-shadow:0 2px 8px rgba(0,0,0,.2); flex-wrap:wrap; gap:.5rem; }
+        nav .brand { font-family:'DM Serif Display',serif; color:#fff; font-size:1.15rem; white-space:nowrap; }
+        nav .nav-links { display:flex; flex-wrap:wrap; gap:.2rem; align-items:center; }
+        nav .nav-links a { color:rgba(255,255,255,.85); text-decoration:none; padding:.3rem .55rem; border-radius:6px; font-size:.82rem; font-weight:500; transition:background .2s; white-space:nowrap; }
+        nav .nav-links a:hover { background:rgba(255,255,255,.15); color:#fff; }
+        nav .nav-links .sep { color:rgba(255,255,255,.3); margin:0 .1rem; }
+
+        main { max-width:1150px; margin:1.8rem auto; padding:0 1.2rem; }
+
+        .flash { padding:.75rem 1.1rem; border-radius:8px; margin-bottom:1rem; font-weight:500; font-size:.88rem; }
+        .flash.success { background:#d8f3dc; color:#1b4332; border-left:4px solid var(--green-l); }
+        .flash.error   { background:#fde8e8; color:#7b1818; border-left:4px solid var(--red); }
+        .flash.warning { background:#fff3cd; color:#856404; border-left:4px solid #ffc107; }
+
+        .card { background:#fff; border-radius:14px; padding:1.6rem; box-shadow:var(--shadow); }
+        h1 { font-family:'DM Serif Display',serif; font-size:1.7rem; margin-bottom:1.3rem; color:var(--green); }
+        h2 { font-family:'DM Serif Display',serif; font-size:1.2rem; margin-bottom:.9rem; }
+
+        .form-group { margin-bottom:1.1rem; }
+        label { display:block; font-weight:600; font-size:.8rem; margin-bottom:.35rem; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+        input, textarea, select { width:100%; padding:.65rem .9rem; border:1.5px solid var(--border); border-radius:8px; font-family:inherit; font-size:.92rem; transition:border-color .2s; background:#fafafa; }
+        input:focus, textarea:focus, select:focus { outline:none; border-color:var(--green-l); background:#fff; }
+        textarea { resize:vertical; min-height:75px; }
+
+        .btn { display:inline-block; padding:.6rem 1.3rem; border-radius:8px; font-family:inherit; font-size:.88rem; font-weight:600; cursor:pointer; border:none; text-decoration:none; transition:opacity .2s,transform .1s; }
+        .btn:hover { opacity:.87; transform:translateY(-1px); }
+        .btn-primary   { background:var(--green); color:#fff; }
+        .btn-warning   { background:#e67e22; color:#fff; }
+        .btn-danger    { background:var(--red); color:#fff; }
+        .btn-secondary { background:#eee; color:var(--text); }
+        .btn-blue      { background:#2980b9; color:#fff; }
+
+        table { width:100%; border-collapse:collapse; font-size:.88rem; }
+        th { background:var(--green); color:#fff; padding:.7rem .9rem; text-align:left; font-weight:600; }
+        th:first-child { border-radius:8px 0 0 0; } th:last-child { border-radius:0 8px 0 0; }
+        td { padding:.65rem .9rem; border-bottom:1px solid #f0f0f0; }
+        tr:last-child td { border-bottom:none; }
+        tr:hover td { background:#f9fbf9; }
+
+        .badge { display:inline-block; padding:.18rem .55rem; border-radius:20px; font-size:.76rem; font-weight:600; }
+        .badge-green  { background:#d8f3dc; color:#1b4332; }
+        .badge-red    { background:#fde8e8; color:#7b1818; }
+        .badge-blue   { background:#dbeafe; color:#1e3a5f; }
+        .badge-orange { background:#fef3c7; color:#92400e; }
+        .badge-purple { background:#ede9fe; color:#4c1d95; }
+        .badge-gray   { background:#f3f4f6; color:#374151; }
+
+        .action-btns { display:flex; gap:.4rem; }
+        .empty-state { text-align:center; padding:2.5rem; color:var(--muted); }
+        .empty-state .icon { font-size:2.8rem; margin-bottom:.8rem; }
+
+        .user-chip { background:rgba(255,255,255,.18); color:#fff; padding:.25rem .7rem; border-radius:20px; font-size:.78rem; font-weight:600; margin-right:.5rem; }
+    </style>
+</head>
+<body>
+
+{% if session.user %}
+<nav>
+    <span class="brand">🌿 FoodWise</span>
+    <div class="nav-links">
+        <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+        <a href="{{ url_for('add_food') }}">➕ Add Food</a>
+        <a href="{{ url_for('view_records') }}">📋 Records</a>
+        <a href="{{ url_for('donate') }}">🤝 Donate</a>
+        <a href="{{ url_for('view_donations') }}">📦 Donations</a>
+        <span class="sep">|</span>
+        <a href="{{ url_for('charts') }}">📊 Charts</a>
+        <a href="{{ url_for('calendar_view') }}">🗓️ Calendar</a>
+        <a href="{{ url_for('report') }}">📅 Report</a>
+        <a href="{{ url_for('activity_log') }}">📝 Log</a>
+        <span class="sep">|</span>
+        {% if session.role == 'superadmin' %}
+        <a href="{{ url_for('manage_users') }}">👥 Users</a>
+        {% endif %}
+        <a href="{{ url_for('change_password') }}">🔑 Password</a>
+        <a href="{{ url_for('print_report') }}" target="_blank">🖨️ Print</a>
+        <span class="user-chip">{{ session.user }}</span>
+        <a href="{{ url_for('public_page') }}" target="_blank" style="background:rgba(255,255,255,.18);border-radius:6px;padding:.3rem .6rem;">🌍 Public Page</a>
+        <a href="{{ url_for('logout') }}" style="color:#ffb3b3;">Logout</a>
+    </div>
+</nav>
+{% endif %}
+
+<main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>

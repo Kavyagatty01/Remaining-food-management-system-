@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Food Records – FoodWise{% endblock %}
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem;flex-wrap:wrap;gap:.7rem;">
+    <div style="display:flex;align-items:center;gap:.8rem;">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back</a>
+        <h1 style="margin:0;">Food Records</h1>
+    </div>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+        <a href="{{ url_for('export_food_csv') }}" class="btn btn-secondary">⬇️ Export CSV</a>
+        <a href="{{ url_for('add_food') }}" class="btn btn-primary">+ Add New</a>
+    </div>
+</div>
+
+<!-- Search & Filter -->
+<div class="card" style="margin-bottom:1.1rem;padding:1.1rem 1.3rem;">
+    <form method="GET" style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-end;">
+        <div style="flex:2;min-width:150px;">
+            <label style="display:block;font-size:.75rem;font-weight:600;color:#666;text-transform:uppercase;margin-bottom:.3rem;">Search Name</label>
+            <input type="text" name="search" value="{{ search }}" placeholder="e.g. Rice…" style="width:100%;padding:.5rem .8rem;border:1.5px solid #ddd;border-radius:8px;font-size:.88rem;">
+        </div>
+        <div style="flex:1;min-width:110px;">
+            <label style="display:block;font-size:.75rem;font-weight:600;color:#666;text-transform:uppercase;margin-bottom:.3rem;">Category</label>
+            <select name="category" style="width:100%;padding:.5rem .8rem;border:1.5px solid #ddd;border-radius:8px;font-size:.88rem;">
+                <option value="">All</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if category==cat %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="flex:1;min-width:120px;">
+            <label style="display:block;font-size:.75rem;font-weight:600;color:#666;text-transform:uppercase;margin-bottom:.3rem;">From Date</label>
+            <input type="date" name="date_from" value="{{ date_from }}" style="width:100%;padding:.5rem .8rem;border:1.5px solid #ddd;border-radius:8px;font-size:.88rem;">
+        </div>
+        <div style="flex:1;min-width:120px;">
+            <label style="display:block;font-size:.75rem;font-weight:600;color:#666;text-transform:uppercase;margin-bottom:.3rem;">To Date</label>
+            <input type="date" name="date_to" value="{{ date_to }}" style="width:100%;padding:.5rem .8rem;border:1.5px solid #ddd;border-radius:8px;font-size:.88rem;">
+        </div>
+        <div style="display:flex;gap:.4rem;">
+            <button type="submit" class="btn btn-primary" style="padding:.5rem 1rem;">🔍 Filter</button>
+            <a href="{{ url_for('view_records') }}" class="btn btn-secondary" style="padding:.5rem .9rem;">✕</a>
+        </div>
+    </form>
+</div>
+
+{% if search or date_from or date_to or category %}
+<div style="font-size:.85rem;color:#666;margin-bottom:.8rem;">
+    Showing <strong>{{ records|length }}</strong> result(s)
+    {% if search %}for "<strong>{{ search }}</strong>"{% endif %}
+    {% if category %}in <strong>{{ category }}</strong>{% endif %}
+    {% if date_from %}from <strong>{{ date_from }}</strong>{% endif %}
+    {% if date_to %}to <strong>{{ date_to }}</strong>{% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+{% if records %}
+<table>
+    <thead><tr><th>#</th><th>Food Name</th><th>Category</th><th>Prepared</th><th>Wasted</th><th>Waste %</th><th>Date</th><th>Notes</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for r in records %}
+    {% set pct = (r.wasted_qty/r.prepared_qty*100) if r.prepared_qty>0 else 0 %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td><strong>{{ r.food_name }}</strong></td>
+        <td><span class="badge badge-purple">{{ r.category or 'Other' }}</span></td>
+        <td><span class="badge badge-green">{{ r.prepared_qty }} kg</span></td>
+        <td><span class="badge badge-red">{{ r.wasted_qty }} kg</span></td>
+        <td><span class="badge {% if pct<20 %}badge-green{% elif pct<40 %}badge-orange{% else %}badge-red{% endif %}">{{ "%.1f"|format(pct) }}%{% if pct>=40 %} ⚠️{% endif %}</span></td>
+        <td>{{ r.date }}</td>
+        <td style="color:#666;font-size:.82rem;max-width:140px;">{{ r.notes or '—' }}</td>
+        <td>
+            <div class="action-btns">
+                <a href="{{ url_for('edit_food', record_id=r.id) }}" class="btn btn-warning" style="padding:.28rem .7rem;font-size:.78rem;">Edit</a>
+                <a href="{{ url_for('delete_food', record_id=r.id) }}" class="btn btn-danger" style="padding:.28rem .7rem;font-size:.78rem;" onclick="return confirm('Delete this record?')">Delete</a>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <div class="icon">{% if search or category or date_from or date_to %}🔍{% else %}📋{% endif %}</div>
+    <p>{% if search or category or date_from or date_to %}No records match your filters. <a href="{{ url_for('view_records') }}">Clear filters</a>{% else %}No food records yet. <a href="{{ url_for('add_food') }}">Add the first one.</a>{% endif %}</p>
+</div>
+{% endif %}
+</div>
+{% endblock %}

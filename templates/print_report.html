@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FoodWise – Print Report</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Georgia', serif; font-size: 12px; color: #111; background: #fff; padding: 2cm; }
+        h1 { font-size: 22px; color: #2d6a4f; margin-bottom: 4px; }
+        .subtitle { font-size: 11px; color: #666; margin-bottom: 20px; }
+        h2 { font-size: 13px; color: #2d6a4f; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin: 18px 0 8px; }
+        .kpi-row { display: flex; gap: 12px; margin-bottom: 16px; }
+        .kpi { border: 1px solid #ccc; border-radius: 6px; padding: 10px 14px; flex: 1; text-align: center; }
+        .kpi .val { font-size: 20px; font-weight: bold; color: #2d6a4f; }
+        .kpi .lbl { font-size: 10px; color: #666; margin-top: 2px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 12px; }
+        th { background: #2d6a4f; color: #fff; padding: 6px 8px; text-align: left; }
+        td { padding: 5px 8px; border-bottom: 1px solid #eee; }
+        tr:last-child td { border-bottom: none; }
+        .footer { margin-top: 24px; font-size: 10px; color: #999; border-top: 1px solid #ddd; padding-top: 8px; display: flex; justify-content: space-between; }
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 1cm; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="no-print" style="margin-bottom:20px; display:flex; gap:10px;">
+    <button onclick="window.print()" style="padding:8px 18px; background:#2d6a4f; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:13px;">🖨️ Print / Save as PDF</button>
+    <button onclick="window.close()" style="padding:8px 18px; background:#eee; border:none; border-radius:6px; cursor:pointer; font-size:13px;">✕ Close</button>
+</div>
+
+<h1>🌿 FoodWise – Full Data Report</h1>
+<div class="subtitle">Generated on {{ today }} &nbsp;·&nbsp; Food Waste Management System</div>
+
+<div class="kpi-row">
+    <div class="kpi"><div class="val">{{ "%.1f"|format(total_prepared) }} kg</div><div class="lbl">Total Prepared</div></div>
+    <div class="kpi"><div class="val">{{ "%.1f"|format(total_wasted) }} kg</div><div class="lbl">Total Wasted</div></div>
+    <div class="kpi"><div class="val">{{ "%.1f"|format(total_donated) }} kg</div><div class="lbl">Total Donated</div></div>
+    <div class="kpi"><div class="val">{{ waste_pct }}%</div><div class="lbl">Overall Waste Rate</div></div>
+</div>
+
+<h2>Food Records</h2>
+{% if records %}
+<table>
+    <thead>
+        <tr><th>#</th><th>Food Name</th><th>Prepared (kg)</th><th>Wasted (kg)</th><th>Waste %</th><th>Date</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+    {% for r in records %}
+    {% set pct = (r.wasted_qty / r.prepared_qty * 100) | round(1) if r.prepared_qty > 0 else 0 %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ r.food_name }}</td>
+        <td>{{ r.prepared_qty }}</td>
+        <td>{{ r.wasted_qty }}</td>
+        <td>{{ pct }}%{% if pct >= 40 %} ⚠️{% endif %}</td>
+        <td>{{ r.date }}</td>
+        <td>{{ r.notes or '—' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#999;">No food records found.</p>
+{% endif %}
+
+<h2>Donation Records</h2>
+{% if donations %}
+<table>
+    <thead>
+        <tr><th>#</th><th>Food Name</th><th>Donated (kg)</th><th>Recipient</th><th>Date</th></tr>
+    </thead>
+    <tbody>
+    {% for d in donations %}
+    <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ d.food_name }}</td>
+        <td>{{ d.donated_qty }}</td>
+        <td>{{ d.recipient }}</td>
+        <td>{{ d.date }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#999;">No donation records found.</p>
+{% endif %}
+
+<div class="footer">
+    <span>FoodWise – Food Waste Management System</span>
+    <span>Printed: {{ today }}</span>
+</div>
+
+</body>
+</html>

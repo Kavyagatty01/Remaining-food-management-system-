@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}Success – FoodWise{% endblock %}
+{% block content %}
+
+{% if action == 'food' %}
+    {% set icon = '🍽️' %}
+    {% set title = 'Food Record Saved!' %}
+    {% set msg = 'Your food preparation and waste data has been recorded successfully.' %}
+    {% set primary_url = url_for('add_food') %}
+    {% set primary_label = '+ Add Another Record' %}
+    {% set secondary_url = url_for('view_records') %}
+    {% set secondary_label = 'View All Records' %}
+{% elif action == 'edit' %}
+    {% set icon = '✏️' %}
+    {% set title = 'Record Updated!' %}
+    {% set msg = 'Your food record has been updated successfully.' %}
+    {% set primary_url = url_for('view_records') %}
+    {% set primary_label = 'View All Records' %}
+    {% set secondary_url = url_for('dashboard') %}
+    {% set secondary_label = 'Go to Dashboard' %}
+{% elif action == 'donation' %}
+    {% set icon = '🤝' %}
+    {% set title = 'Donation Recorded!' %}
+    {% set msg = 'The food donation has been recorded. Thank you for helping reduce waste!' %}
+    {% set primary_url = url_for('donate') %}
+    {% set primary_label = '+ Add Another Donation' %}
+    {% set secondary_url = url_for('view_donations') %}
+    {% set secondary_label = 'View All Donations' %}
+{% else %}
+    {% set icon = '✅' %}
+    {% set title = 'Done!' %}
+    {% set msg = 'Your action was completed successfully.' %}
+    {% set primary_url = url_for('dashboard') %}
+    {% set primary_label = 'Go to Dashboard' %}
+    {% set secondary_url = url_for('dashboard') %}
+    {% set secondary_label = 'Dashboard' %}
+{% endif %}
+
+<div style="max-width:500px; margin:4rem auto; text-align:center;">
+    <div class="card" style="padding:3rem 2rem;">
+
+        <!-- Animated checkmark circle -->
+        <div style="width:90px; height:90px; border-radius:50%; background:#d8f3dc; display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem; font-size:2.5rem; animation: popIn .4s ease;">
+            {{ icon }}
+        </div>
+
+        <h1 style="color:#2d6a4f; font-size:2rem; margin-bottom:.6rem;">{{ title }}</h1>
+        <p style="color:#555; font-size:1rem; margin-bottom:2rem; line-height:1.6;">{{ msg }}</p>
+
+        <div style="display:flex; flex-direction:column; gap:.8rem;">
+            <a href="{{ primary_url }}" class="btn btn-primary" style="width:100%; text-align:center; padding:.8rem;">
+                {{ primary_label }}
+            </a>
+            <a href="{{ secondary_url }}" class="btn btn-secondary" style="width:100%; text-align:center; padding:.8rem;">
+                {{ secondary_label }}
+            </a>
+            <a href="{{ url_for('dashboard') }}" style="color:#888; font-size:.88rem; text-decoration:none; margin-top:.3rem;">
+                ← Return to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes popIn {
+    0%   { transform: scale(0.5); opacity: 0; }
+    70%  { transform: scale(1.1); }
+    100% { transform: scale(1);   opacity: 1; }
+}
+</style>
+
+{% endblock %}

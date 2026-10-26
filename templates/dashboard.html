@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Dashboard – FoodWise{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:.8rem;">
+    <h1 style="margin:0;">Dashboard</h1>
+    <div style="display:flex; align-items:center; gap:.8rem; font-size:.82rem; color:#666;">
+        <span id="refresh-status" style="display:flex; align-items:center; gap:.4rem;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#52b788;display:inline-block;animation:pulse 2s infinite;"></span>
+            Live · refreshes every 30s
+        </span>
+        <button onclick="refreshStats()" class="btn btn-secondary" style="padding:.3rem .8rem; font-size:.8rem;">↻ Refresh Now</button>
+    </div>
+</div>
+
+{% if alerts %}
+<div style="margin-bottom:1.4rem;">
+    {% for a in alerts %}
+    <div style="background:#fff3cd;border:1.5px solid #ffc107;border-left:5px solid #e67e22;border-radius:10px;padding:.85rem 1.1rem;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between;font-size:.88rem;">
+        <span>⚠️ <strong>High waste alert:</strong> {{ a.food }} — {{ a.pct }}% wasted ({{ a.waste }} kg of {{ a.prep }} kg prepared)</span>
+        <a href="{{ url_for('view_records', search=a.food) }}" style="font-size:.8rem;color:#856404;font-weight:600;white-space:nowrap;margin-left:1rem;">View →</a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- All-time KPI cards -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.2rem;">
+    <div class="card" style="border-top:4px solid #52b788;text-align:center;">
+        <div style="font-size:.75rem;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;">Total Prepared</div>
+        <div id="stat-prepared" style="font-size:2rem;font-weight:700;color:#2d6a4f;">{{ "%.1f"|format(total_prepared) }}</div>
+        <div style="font-size:.78rem;color:#999;">kg all time</div>
+    </div>
+    <div class="card" style="border-top:4px solid #e74c3c;text-align:center;">
+        <div style="font-size:.75rem;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;">Total Wasted</div>
+        <div id="stat-wasted" style="font-size:2rem;font-weight:700;color:#c0392b;">{{ "%.1f"|format(total_wasted) }}</div>
+        <div style="font-size:.78rem;color:#999;">kg all time</div>
+    </div>
+    <div class="card" style="border-top:4px solid #3498db;text-align:center;">
+        <div style="font-size:.75rem;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;">Total Donated</div>
+        <div id="stat-donated" style="font-size:2rem;font-weight:700;color:#1a5276;">{{ "%.1f"|format(total_donated) }}</div>
+        <div style="font-size:.78rem;color:#999;">kg all time</div>
+    </div>
+    <div class="card" style="border-top:4px solid #e67e22;text-align:center;">
+        <div style="font-size:.75rem;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;">Waste Rate</div>
+        <div id="stat-waste-pct" style="font-size:2rem;font-weight:700;color:#a04000;">{{ "%.1f"|format((total_wasted/total_prepared*100) if total_prepared > 0 else 0) }}%</div>
+        <div style="font-size:.78rem;color:#999;">all time average</div>
+    </div>
+    <div class="card" style="border-top:4px solid #9b59b6;text-align:center;">
+        <div style="font-size:.75rem;color:#666;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem;">Food Records</div>
+        <div id="stat-records" style="font-size:2rem;font-weight:700;color:#6c3483;">{{ total_records }}</div>
+        <div style="font-size:.78rem;color:#999;">entries total</div>
+    </div>
+</div>
+
+<!-- Today's live panel -->
+<div class="card" style="margin-bottom:1.2rem;background:linear-gradient(135deg,#f0faf4,#e8f5e9);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <h2 style="margin:0;color:#2d6a4f;">📅 Today — {{ today }}</h2>
+        <span id="last-updated" style="font-size:.78rem;color:#888;"></span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div style="background:#fff;border-radius:10px;padding:1rem;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.06);">
+            <div style="font-size:.78rem;color:#666;font-weight:600;text-transform:uppercase;">Prepared Today</div>
+            <div id="today-prepared" style="font-size:1.7rem;font-weight:700;color:#2d6a4f;margin:.2rem 0;">{{ "%.1f"|format(today_prepared) }} kg</div>
+        </div>
+        <div style="background:#fff;border-radius:10px;padding:1rem;text-align:center;box-shadow:0 1px 6px rgba(0,0,0,.06);">
+            <div style="font-size:.78rem;color:#666;font-weight:600;text-transform:uppercase;">Wasted Today</div>
+            <div id="today-wasted" style="font-size:1.7rem;font-weight:700;color:#c0392b;margin:.2rem 0;">{{ "%.1f"|format(today_wasted) }} kg</div>
+        </div>
+    </div>
+</div>
+
+<!-- Waste rate bar -->
+{% if total_prepared > 0 %}
+{% set waste_pct = (total_wasted / total_prepared * 100)|round(1) %}
+<div class="card" style="margin-bottom:1.2rem;">
+    <h2>Overall Waste Rate</h2>
+    <div style="font-size:.88rem;color:#666;margin-bottom:.5rem;">{{ waste_pct }}% of all prepared food was wasted</div>
+    <div style="background:#eee;border-radius:99px;height:14px;overflow:hidden;">
+        <div style="width:{{ [waste_pct,100]|min }}%;background:{% if waste_pct < 20 %}#52b788{% elif waste_pct < 40 %}#e67e22{% else %}#e74c3c{% endif %};height:100%;border-radius:99px;transition:width .6s;"></div>
+    </div>
+    <div style="font-size:.8rem;color:#999;margin-top:.35rem;">
+        {% if waste_pct < 20 %}✅ Excellent! Very low waste.
+        {% elif waste_pct < 40 %}⚠️ Moderate waste. Try adjusting quantities.
+        {% else %}🚨 High waste rate. Review your food planning.{% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="card">
+    <h2>Quick Actions</h2>
+    <div style="display:flex;gap:.8rem;flex-wrap:wrap;margin-top:.4rem;">
+        <a href="{{ url_for('add_food') }}"      class="btn btn-primary">➕ Add Food Record</a>
+        <a href="{{ url_for('donate') }}"         class="btn btn-secondary">🤝 Record Donation</a>
+        <a href="{{ url_for('calendar_view') }}"  class="btn btn-secondary">🗓️ Calendar View</a>
+        <a href="{{ url_for('charts') }}"         class="btn btn-secondary">📊 View Charts</a>
+        <a href="{{ url_for('report') }}"         class="btn btn-secondary">📅 Weekly Report</a>
+    </div>
+</div>
+
+<style>
+@keyframes pulse {
+    0%,100%{opacity:1} 50%{opacity:.4}
+}
+</style>
+
+<script>
+function refreshStats() {
+    fetch('/api/stats')
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('stat-prepared').textContent   = d.total_prepared.toFixed(1);
+            document.getElementById('stat-wasted').textContent     = d.total_wasted.toFixed(1);
+            document.getElementById('stat-donated').textContent    = d.total_donated.toFixed(1);
+            document.getElementById('stat-records').textContent    = d.total_records;
+            document.getElementById('stat-waste-pct').textContent  = d.waste_pct + '%';
+            document.getElementById('today-prepared').textContent  = d.today_prepared.toFixed(1) + ' kg';
+            document.getElementById('today-wasted').textContent    = d.today_wasted.toFixed(1) + ' kg';
+            const now = new Date();
+            document.getElementById('last-updated').textContent =
+                'Updated ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+        })
+        .catch(() => {});
+}
+// Auto-refresh every 30 seconds
+setInterval(refreshStats, 30000);
+// Show initial timestamp
+document.getElementById('last-updated').textContent = 'Live data';
+</script>
+
+{% endblock %}

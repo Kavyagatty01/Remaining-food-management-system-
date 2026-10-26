@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Add Food – FoodWise{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.4rem;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back</a>
+    <h1 style="margin:0;">Add Food Record</h1>
+</div>
+
+<div class="card" style="max-width:600px;">
+
+    <form method="POST">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group" style="grid-column:1/-1;">
+                <label>Food Name</label>
+                <input type="text" name="food_name" placeholder="e.g. Rice, Bread, Dal" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select name="category">
+                    {% for cat in categories %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" name="date" value="{{ today }}" min="{{ today }}" max="{{ today }}" required>
+            </div>
+            <div class="form-group">
+                <label>Prepared Qty (kg)</label>
+                <input type="number" name="prepared_qty" id="prepared" placeholder="1 – 100000" step="0.1" min="0.1" max="100000" required oninput="checkWaste()">
+                <span id="prepared_err" style="color:#c0392b;font-size:.78rem;display:none;"></span>
+            </div>
+            <div class="form-group">
+                <label>Wasted Qty (kg)</label>
+                <input type="number" name="wasted_qty" id="wasted" placeholder="0.1+" step="0.1" min="0.1" required oninput="checkWaste()">
+                <span id="waste_err" style="color:#c0392b;font-size:.78rem;display:none;"></span>
+            </div>
+        </div>
+
+        <!-- Live waste rate bar -->
+        <div id="waste_bar_wrap" style="display:none;margin:-.4rem 0 1rem;">
+            <div style="font-size:.82rem;color:#555;margin-bottom:.3rem;">Waste rate: <strong id="waste_pct">0%</strong></div>
+            <div style="background:#eee;border-radius:99px;height:10px;overflow:hidden;">
+                <div id="waste_bar" style="height:100%;border-radius:99px;width:0%;background:#52b788;transition:width .3s,background .3s;"></div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Notes (optional)</label>
+            <textarea name="notes" placeholder="Any remarks about this food entry..."></textarea>
+        </div>
+
+        <div style="display:flex;gap:.8rem;">
+            <button type="submit" class="btn btn-primary">✅ Save Record</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function checkWaste() {
+    const p = parseFloat(document.getElementById('prepared').value)||0;
+    const w = parseFloat(document.getElementById('wasted').value)||0;
+    const praw = document.getElementById('prepared').value;
+    const wraw = document.getElementById('wasted').value;
+    const perr = document.getElementById('prepared_err');
+    const werr = document.getElementById('waste_err');
+    const wrap = document.getElementById('waste_bar_wrap');
+    const bar  = document.getElementById('waste_bar');
+    const pct  = document.getElementById('waste_pct');
+    if (praw!==''&&p<=0)         { perr.textContent='Must be > 0 kg'; perr.style.display='block'; }
+    else if (praw!==''&&p>100000){ perr.textContent='Max 100,000 kg'; perr.style.display='block'; }
+    else                          { perr.style.display='none'; }
+    if (wraw!==''&&w<=0)          { werr.textContent='Must be > 0 kg'; werr.style.display='block'; }
+    else if (p>0&&w>p)            { werr.textContent='Cannot exceed prepared qty'; werr.style.display='block'; }
+    else                          { werr.style.display='none'; }
+    if (p>0&&w>0) {
+        wrap.style.display='block';
+        const ratio=Math.min(w/p,1)*100;
+        bar.style.width=ratio+'%';
+        pct.textContent=ratio.toFixed(1)+'%';
+        bar.style.background=ratio<20?'#52b788':ratio<50?'#e67e22':'#e74c3c';
+    } else { wrap.style.display='none'; }
+}
+</script>
+{% endblock %}

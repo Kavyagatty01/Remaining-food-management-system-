@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% block title %}Charts – FoodWise{% endblock %}
+
+{% block content %}
+
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.8rem;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back</a>
+    <h1 style="margin:0;">Food Analytics</h1>
+</div>
+
+{% if not food_data %}
+<div class="card" style="text-align:center; padding:3rem;">
+    <div style="font-size:3rem; margin-bottom:1rem;">📊</div>
+    <p style="color:#666; font-size:1rem;">No food records yet. Add some records first to see charts.</p>
+    <a href="{{ url_for('add_food') }}" class="btn btn-primary" style="margin-top:1rem;">+ Add Food Record</a>
+</div>
+{% else %}
+
+<!-- ── Row 1: Two Pie Charts ── -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.4rem; margin-bottom:1.4rem;">
+
+    <!-- Pie 1: Overall distribution -->
+    <div class="card">
+        <h2 style="font-size:1rem; color:#444; margin-bottom:1.2rem; text-align:center;">
+            🥧 Overall Food Distribution
+        </h2>
+        <div style="position:relative; height:240px;">
+            <canvas id="pieOverall"></canvas>
+        </div>
+        <div id="pieOverallLegend" style="display:flex; flex-wrap:wrap; justify-content:center; gap:.5rem .8rem; margin-top:1rem; font-size:.82rem;"></div>
+    </div>
+
+    <!-- Pie 2: Waste per food item -->
+    <div class="card">
+        <h2 style="font-size:1rem; color:#444; margin-bottom:1.2rem; text-align:center;">
+            🗑️ Waste by Food Item
+        </h2>
+        <div style="position:relative; height:240px;">
+            <canvas id="pieWaste"></canvas>
+        </div>
+        <div id="pieWasteLegend" style="display:flex; flex-wrap:wrap; justify-content:center; gap:.5rem .8rem; margin-top:1rem; font-size:.82rem;"></div>
+    </div>
+
+</div>
+
+<!-- ── Row 2: Bar Charts ── -->
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.4rem; margin-bottom:1.4rem;">
+
+    <!-- Bar 1: Prepared vs Wasted per food -->
+    <div class="card">
+        <h2 style="font-size:1rem; color:#444; margin-bottom:1.2rem; text-align:center;">
+            📊 Prepared vs Wasted (per Food)
+        </h2>
+        <div style="position:relative; height:260px;">
+            <canvas id="barFood"></canvas>
+        </div>
+    </div>
+
+    <!-- Bar 2: Daily trend -->
+    <div class="card">
+        <h2 style="font-size:1rem; color:#444; margin-bottom:1.2rem; text-align:center;">
+            📈 Daily Trend (Last 7 Days)
+        </h2>
+        <div style="position:relative; height:260px;">
+            <canvas id="barDaily"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- ── Row 3: Category waste bar ── -->
+{% if category_data %}
+<div class="card" style="margin-bottom:1.4rem;">
+    <h2 style="font-size:1rem; color:#444; margin-bottom:1.2rem; text-align:center;">
+        🏷️ Waste by Category (kg)
+    </h2>
+    <div style="position:relative; height:220px;">
+        <canvas id="barCategory"></canvas>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── Row 4: Donation bar (full width) ── -->
+{% if donation_data %}
+<div class="card" style="margin-bottom:1.4rem;">
+    <h2 style="font-size:1rem; color:#444; margin-bottom:1.2rem; text-align:center;">
+        🤝 Donations by Food Item (kg)
+    </h2>
+    <div style="position:relative; height:220px;">
+        <canvas id="barDonation"></canvas>
+    </div>
+</div>
+{% endif %}
+
+<!-- ── Summary cards ── -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem;">
+    <div class="card" style="text-align:center; border-top:4px solid #52b788;">
+        <div style="font-size:1.8rem; font-weight:700; color:#2d6a4f;">{{ "%.1f"|format(total_prepared) }}</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">kg Prepared</div>
+    </div>
+    <div class="card" style="text-align:center; border-top:4px solid #e74c3c;">
+        <div style="font-size:1.8rem; font-weight:700; color:#c0392b;">{{ "%.1f"|format(total_wasted) }}</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">kg Wasted</div>
+    </div>
+    <div class="card" style="text-align:center; border-top:4px solid #27ae60;">
+        <div style="font-size:1.8rem; font-weight:700; color:#1e8449;">{{ "%.1f"|format(total_used) }}</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">kg Used</div>
+    </div>
+    <div class="card" style="text-align:center; border-top:4px solid #3498db;">
+        <div style="font-size:1.8rem; font-weight:700; color:#1a5276;">{{ "%.1f"|format(total_donated) }}</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">kg Donated</div>
+    </div>
+    {% if total_prepared > 0 %}
+    <div class="card" style="text-align:center; border-top:4px solid #e67e22;">
+        <div style="font-size:1.8rem; font-weight:700; color:#a04000;">{{ "%.1f"|format(total_wasted / total_prepared * 100) }}%</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">Waste Rate</div>
+    </div>
+    {% endif %}
+</div>
+
+{% endif %}
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── Data from Flask ──
+const foodData     = {{ food_data | tojson }};
+const dailyData    = {{ daily_data | tojson }};
+const donationData  = {{ donation_data | tojson }};
+const categoryData  = {{ category_data | tojson }};
+const totals = {
+    prepared: {{ total_prepared }},
+    wasted:   {{ total_wasted }},
+    used:     {{ total_used }},
+    donated:  {{ total_donated }},
+};
+
+// ── Colour palettes ──
+const PIE_COLORS   = ['#2d6a4f','#52b788','#e74c3c','#e67e22','#3498db','#9b59b6','#f39c12','#1abc9c','#e91e63','#00bcd4'];
+const GREEN        = 'rgba(82,183,136,0.85)';
+const RED          = 'rgba(231,76,60,0.80)';
+const BLUE         = 'rgba(52,152,219,0.80)';
+const GREEN_BORDER = '#2d6a4f';
+const RED_BORDER   = '#c0392b';
+const BLUE_BORDER  = '#2471a3';
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#555';
+
+// ── Helper: custom legend ──
+function buildLegend(containerId, labels, colors) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    el.innerHTML = labels.map((l, i) =>
+        `<span style="display:inline-flex;align-items:center;gap:4px;">
+           <span style="width:10px;height:10px;border-radius:50%;background:${colors[i % colors.length]};display:inline-block;"></span>
+           ${l}
+         </span>`
+    ).join('');
+}
+
+// ── PIE 1: Overall distribution ──
+if (document.getElementById('pieOverall')) {
+    const labels = ['Used', 'Wasted', 'Donated'];
+    const vals   = [totals.used, totals.wasted, totals.donated];
+    const colors = ['#52b788', '#e74c3c', '#3498db'];
+    new Chart(document.getElementById('pieOverall'), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{ data: vals, backgroundColor: colors, borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)} kg` } }
+            }
+        }
+    });
+    buildLegend('pieOverallLegend', labels, colors);
+}
+
+// ── PIE 2: Waste by food item ──
+if (document.getElementById('pieWaste') && foodData.length) {
+    const labels = foodData.map(r => r.food_name);
+    const vals   = foodData.map(r => r.wasted);
+    new Chart(document.getElementById('pieWaste'), {
+        type: 'doughnut',
+        data: {
+            labels,
+            datasets: [{ data: vals, backgroundColor: PIE_COLORS, borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '62%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)} kg wasted` } }
+            }
+        }
+    });
+    buildLegend('pieWasteLegend', labels, PIE_COLORS);
+}
+
+// ── BAR 1: Prepared vs Wasted per food ──
+if (document.getElementById('barFood') && foodData.length) {
+    new Chart(document.getElementById('barFood'), {
+        type: 'bar',
+        data: {
+            labels: foodData.map(r => r.food_name),
+            datasets: [
+                { label: 'Prepared (kg)', data: foodData.map(r => r.prepared), backgroundColor: GREEN, borderColor: GREEN_BORDER, borderWidth: 1.5, borderRadius: 6 },
+                { label: 'Wasted (kg)',   data: foodData.map(r => r.wasted),   backgroundColor: RED,   borderColor: RED_BORDER,   borderWidth: 1.5, borderRadius: 6 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 12 } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxRotation: 30 } },
+                y: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { callback: v => v + ' kg' } }
+            }
+        }
+    });
+}
+
+// ── BAR 2: Daily trend ──
+if (document.getElementById('barDaily') && dailyData.length) {
+    new Chart(document.getElementById('barDaily'), {
+        type: 'bar',
+        data: {
+            labels: dailyData.map(r => r.date),
+            datasets: [
+                { label: 'Prepared (kg)', data: dailyData.map(r => r.prepared), backgroundColor: GREEN, borderColor: GREEN_BORDER, borderWidth: 1.5, borderRadius: 6 },
+                { label: 'Wasted (kg)',   data: dailyData.map(r => r.wasted),   backgroundColor: RED,   borderColor: RED_BORDER,   borderWidth: 1.5, borderRadius: 6 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 12 } } },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxRotation: 30 } },
+                y: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { callback: v => v + ' kg' } }
+            }
+        }
+    });
+}
+
+// ── BAR 3: Category waste ──
+if (document.getElementById('barCategory') && categoryData.length) {
+    new Chart(document.getElementById('barCategory'), {
+        type: 'bar',
+        data: {
+            labels: categoryData.map(r => r.category),
+            datasets: [
+                { label: 'Prepared (kg)', data: categoryData.map(r => r.prepared), backgroundColor: GREEN, borderColor: GREEN_BORDER, borderWidth:1.5, borderRadius:6 },
+                { label: 'Wasted (kg)',   data: categoryData.map(r => r.wasted),   backgroundColor: RED,   borderColor: RED_BORDER,   borderWidth:1.5, borderRadius:6 },
+            ]
+        },
+        options: {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ position:'top', labels:{ boxWidth:12, padding:12 } } },
+            scales:{
+                x:{ grid:{ display:false } },
+                y:{ grid:{ color:'rgba(0,0,0,.06)' }, ticks:{ callback: v => v+' kg' } }
+            }
+        }
+    });
+}
+
+// ── BAR 4: Donations ──
+if (document.getElementById('barDonation') && donationData.length) {
+    new Chart(document.getElementById('barDonation'), {
+        type: 'bar',
+        data: {
+            labels: donationData.map(r => r.food_name),
+            datasets: [
+                { label: 'Donated (kg)', data: donationData.map(r => r.donated), backgroundColor: BLUE, borderColor: BLUE_BORDER, borderWidth: 1.5, borderRadius: 6 },
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { color: 'rgba(0,0,0,.06)' }, ticks: { callback: v => v + ' kg' } },
+                y: { grid: { display: false } }
+            }
+        }
+    });
+}
+</script>
+
+{% endblock %}

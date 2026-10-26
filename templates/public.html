@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodWise – Public Donation Transparency</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --green: #2d6a4f; --green-l: #52b788; --green-xl: #d8f3dc;
+            --cream: #f8f4ee; --text: #1a1a1a; --muted: #666;
+            --white: #fff; --shadow: 0 4px 20px rgba(0,0,0,.08);
+        }
+        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); }
+
+        /* ── HERO ── */
+        .hero {
+            background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 50%, #40916c 100%);
+            color: #fff;
+            padding: 3.5rem 1.5rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255,255,255,.15);
+            border: 1px solid rgba(255,255,255,.3);
+            border-radius: 99px;
+            padding: .35rem 1rem;
+            font-size: .78rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 1.2rem;
+        }
+        .hero h1 {
+            font-family: 'DM Serif Display', serif;
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            line-height: 1.15;
+            margin-bottom: .8rem;
+        }
+        .hero p {
+            font-size: 1.05rem;
+            opacity: .85;
+            max-width: 540px;
+            margin: 0 auto 2rem;
+            line-height: 1.65;
+        }
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+        .hero-stat .val {
+            font-family: 'DM Serif Display', serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+        .hero-stat .lbl {
+            font-size: .82rem;
+            opacity: .75;
+            margin-top: .2rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        /* ── LAYOUT ── */
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 1.3rem; }
+        .section { padding: 3rem 0; }
+        .section-title {
+            font-family: 'DM Serif Display', serif;
+            font-size: 1.7rem;
+            color: var(--green);
+            margin-bottom: .4rem;
+        }
+        .section-sub { color: var(--muted); font-size: .92rem; margin-bottom: 2rem; }
+
+        /* ── CARDS ── */
+        .card { background: var(--white); border-radius: 16px; padding: 1.8rem; box-shadow: var(--shadow); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+        @media(max-width:700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+        /* ── IMPACT CARDS ── */
+        .impact-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 1.6rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            border-top: 5px solid var(--green-l);
+        }
+        .impact-card .icon { font-size: 2.2rem; margin-bottom: .7rem; }
+        .impact-card .val { font-size: 2.2rem; font-weight: 700; color: var(--green); }
+        .impact-card .lbl { font-size: .82rem; color: var(--muted); font-weight: 600; margin-top: .25rem; text-transform: uppercase; letter-spacing: .4px; }
+
+        /* ── TOP RECIPIENTS ── */
+        .recipient-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: .85rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .recipient-item:last-child { border-bottom: none; }
+        .recipient-rank {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: var(--green-xl);
+            color: var(--green);
+            font-weight: 700;
+            font-size: .85rem;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .recipient-rank.gold   { background: #fef3c7; color: #b45309; }
+        .recipient-rank.silver { background: #f1f5f9; color: #475569; }
+        .recipient-rank.bronze { background: #fef0e6; color: #c2410c; }
+        .recipient-bar-wrap { flex: 1; }
+        .recipient-name { font-weight: 600; font-size: .92rem; }
+        .recipient-meta { font-size: .78rem; color: var(--muted); margin-top: .15rem; }
+        .recipient-bar { height: 6px; border-radius: 99px; background: var(--green-xl); margin-top: .4rem; overflow: hidden; }
+        .recipient-bar-fill { height: 100%; border-radius: 99px; background: var(--green-l); }
+        .recipient-qty { font-weight: 700; color: var(--green); font-size: .92rem; white-space: nowrap; }
+
+        /* ── DONATION TABLE ── */
+        table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+        th { background: var(--green); color: #fff; padding: .75rem 1rem; text-align: left; font-weight: 600; }
+        th:first-child { border-radius: 8px 0 0 0; } th:last-child { border-radius: 0 8px 0 0; }
+        td { padding: .7rem 1rem; border-bottom: 1px solid #f5f5f5; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: #fafcfa; }
+        .badge { display: inline-block; padding: .2rem .6rem; border-radius: 20px; font-size: .76rem; font-weight: 600; }
+        .badge-green { background: var(--green-xl); color: #1b4332; }
+        .badge-blue  { background: #dbeafe; color: #1e3a5f; }
+
+        /* ── FOOTER ── */
+        footer {
+            background: #1b4332;
+            color: rgba(255,255,255,.7);
+            text-align: center;
+            padding: 2rem 1rem;
+            font-size: .85rem;
+        }
+        footer strong { color: #fff; }
+
+        /* ── ANNOUNCEMENT BANNER ── */
+        .transparency-bar {
+            background: var(--green-l);
+            color: #fff;
+            text-align: center;
+            padding: .55rem 1rem;
+            font-size: .82rem;
+            font-weight: 600;
+            letter-spacing: .3px;
+        }
+
+        /* ── EMPTY ── */
+        .empty { text-align: center; padding: 3rem; color: var(--muted); }
+        .empty .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+        /* nav bar */
+        .pub-nav {
+            background: var(--white);
+            border-bottom: 1px solid #eee;
+            padding: .8rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 4px rgba(0,0,0,.06);
+        }
+        .pub-nav .brand { font-family: 'DM Serif Display', serif; color: var(--green); font-size: 1.2rem; }
+        .pub-nav .login-link { background: var(--green); color: #fff; padding: .4rem 1rem; border-radius: 8px; text-decoration: none; font-size: .85rem; font-weight: 600; }
+        .pub-nav .login-link:hover { opacity: .88; }
+    </style>
+</head>
+<body>
+
+<!-- Top transparency bar -->
+<div class="transparency-bar">
+    🌿 This is a public transparency page — all donation data shown here is real and updated live.
+</div>
+
+<!-- Navbar -->
+<nav class="pub-nav">
+    <span class="brand">🌿 FoodWise</span>
+    <a href="{{ url_for('login') }}" class="login-link">Admin Login →</a>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-badge">🤝 Donation Transparency Report</div>
+    <h1>Food We've Shared<br>With Our Community</h1>
+    <p>We believe in full transparency. Every kilogram of food donated is recorded here for the public to see.</p>
+    <div class="hero-stats">
+        <div class="hero-stat">
+            <div class="val">{{ "%.1f"|format(total_donated) }} kg</div>
+            <div class="lbl">Food Donated</div>
+        </div>
+        <div class="hero-stat">
+            <div class="val">{{ total_donations }}</div>
+            <div class="lbl">Donations Made</div>
+        </div>
+        <div class="hero-stat">
+            <div class="val">{{ top_recipients|length }}</div>
+            <div class="lbl">Partner Organisations</div>
+        </div>
+    </div>
+</section>
+
+<!-- Impact numbers -->
+<section class="section" style="padding-bottom:0;">
+    <div class="container">
+        <div class="section-title">Our Impact at a Glance</div>
+        <div class="section-sub">How your food is being managed and shared responsibly</div>
+        <div class="grid-3">
+            <div class="impact-card">
+                <div class="icon">🤝</div>
+                <div class="val">{{ "%.1f"|format(total_donated) }} kg</div>
+                <div class="lbl">Total Food Donated</div>
+            </div>
+            <div class="impact-card" style="border-color:#3498db;">
+                <div class="icon">🏢</div>
+                <div class="val">{{ top_recipients|length }}</div>
+                <div class="lbl">Recipient Organisations</div>
+            </div>
+            <div class="impact-card" style="border-color:#e67e22;">
+                <div class="icon">📦</div>
+                <div class="val">{{ total_donations }}</div>
+                <div class="lbl">Donation Events</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Charts + Top Recipients -->
+<section class="section">
+    <div class="container">
+        <div class="grid-2" style="margin-bottom:1.4rem;">
+
+            <!-- Donations by food pie -->
+            <div class="card">
+                <div style="font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--green); margin-bottom:1rem;">🍽️ Donated Food Types</div>
+                {% if by_food %}
+                <div style="position:relative; height:230px;">
+                    <canvas id="pieFood"></canvas>
+                </div>
+                <div id="pieFoodLegend" style="display:flex; flex-wrap:wrap; justify-content:center; gap:.4rem .8rem; margin-top:1rem; font-size:.78rem;"></div>
+                {% else %}
+                <div class="empty"><div class="icon">🍽️</div><p>No donation data yet.</p></div>
+                {% endif %}
+            </div>
+
+            <!-- Monthly trend bar -->
+            <div class="card">
+                <div style="font-family:'DM Serif Display',serif; font-size:1.1rem; color:var(--green); margin-bottom:1rem;">📈 Monthly Donation Trend</div>
+                {% if monthly %}
+                <div style="position:relative; height:230px;">
+                    <canvas id="barMonthly"></canvas>
+                </div>
+                {% else %}
+                <div class="empty"><div class="icon">📈</div><p>No trend data yet.</p></div>
+                {% endif %}
+            </div>
+
+        </div>
+
+        <!-- Top recipients -->
+        <div class="card">
+            <div style="font-family:'DM Serif Display',serif; font-size:1.2rem; color:var(--green); margin-bottom:1.2rem;">🏆 Top Recipient Organisations</div>
+            {% if top_recipients %}
+            {% set max_qty = top_recipients[0].total %}
+            {% for r in top_recipients %}
+            <div class="recipient-item">
+                <div class="recipient-rank {% if loop.index==1 %}gold{% elif loop.index==2 %}silver{% elif loop.index==3 %}bronze{% endif %}">
+                    {{ loop.index }}
+                </div>
+                <div class="recipient-bar-wrap">
+                    <div class="recipient-name">{{ r.recipient }}</div>
+                    <div class="recipient-meta">{{ r.times }} donation{{ 's' if r.times != 1 }}</div>
+                    <div class="recipient-bar">
+                        <div class="recipient-bar-fill" style="width:{{ (r.total / max_qty * 100)|round(1) }}%;"></div>
+                    </div>
+                </div>
+                <div class="recipient-qty">{{ "%.1f"|format(r.total) }} kg</div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="empty"><div class="icon">🏢</div><p>No recipient data yet.</p></div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Full donation history table -->
+<section class="section" style="padding-top:0;">
+    <div class="container">
+        <div class="section-title">Complete Donation History</div>
+        <div class="section-sub">Every donation we've made, publicly recorded for full transparency.</div>
+
+        {% if donations %}
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Food Item</th>
+                        <th>Quantity</th>
+                        <th>Donated To</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for d in donations %}
+                <tr>
+                    <td style="color:#999; font-size:.8rem;">{{ loop.index }}</td>
+                    <td><strong>{{ d.food_name }}</strong></td>
+                    <td><span class="badge badge-green">{{ d.donated_qty }} kg</span></td>
+                    <td><span class="badge badge-blue">{{ d.recipient }}</span></td>
+                    <td style="color:var(--muted); font-size:.85rem;">{{ d.date }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="empty">
+                <div class="icon">🤝</div>
+                <p>No donations have been recorded yet. Check back soon!</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Footer -->
+<footer>
+    <strong>🌿 FoodWise</strong> — Food Waste Management System<br>
+    <span style="font-size:.78rem; margin-top:.3rem; display:block;">
+        This page is publicly accessible. Data is updated in real time. &nbsp;·&nbsp; Generated on {{ today }}
+    </span>
+</footer>
+
+<!-- Charts JS -->
+<script>
+const byFood    = {{ by_food   | tojson }};
+const monthly   = {{ monthly   | tojson }};
+const PIE_COLORS = ['#2d6a4f','#52b788','#e74c3c','#3498db','#e67e22','#9b59b6','#f39c12','#1abc9c'];
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size   = 12;
+
+function buildLegend(id, labels, colors) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.innerHTML = labels.map((l, i) =>
+        `<span style="display:inline-flex;align-items:center;gap:4px;">
+           <span style="width:9px;height:9px;border-radius:50%;background:${colors[i%colors.length]};display:inline-block;"></span>${l}
+         </span>`
+    ).join('');
+}
+
+// Pie: food types
+if (document.getElementById('pieFood') && byFood.length) {
+    new Chart(document.getElementById('pieFood'), {
+        type: 'doughnut',
+        data: {
+            labels: byFood.map(r => r.food_name),
+            datasets: [{ data: byFood.map(r => r.total), backgroundColor: PIE_COLORS, borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '60%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(1)} kg` } }
+            }
+        }
+    });
+    buildLegend('pieFoodLegend', byFood.map(r => r.food_name), PIE_COLORS);
+}
+
+// Bar: monthly trend
+if (document.getElementById('barMonthly') && monthly.length) {
+    new Chart(document.getElementById('barMonthly'), {
+        type: 'bar',
+        data: {
+            labels: monthly.map(r => r.month),
+            datasets: [{
+                label: 'Donated (kg)',
+                data: monthly.map(r => r.total),
+                backgroundColor: 'rgba(82,183,136,0.8)',
+                borderColor: '#2d6a4f',
+                borderWidth: 1.5,
+                borderRadius: 8
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { grid: { display: false } },
+                y: { grid: { color: 'rgba(0,0,0,.05)' }, ticks: { callback: v => v + ' kg' } }
+            }
+        }
+    });
+}
+</script>
+
+</body>
+</html>

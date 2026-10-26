@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Summary Report – FoodWise{% endblock %}
+{% block content %}
+
+<div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back</a>
+    <h1 style="margin:0;">Summary Report</h1>
+    <div style="margin-left:auto; display:flex; gap:.5rem;">
+        <a href="{{ url_for('report', period='weekly') }}"  class="btn {% if period=='weekly' %}btn-primary{% else %}btn-secondary{% endif %}">📅 This Week</a>
+        <a href="{{ url_for('report', period='monthly') }}" class="btn {% if period=='monthly' %}btn-primary{% else %}btn-secondary{% endif %}">🗓️ This Month</a>
+        <a href="{{ url_for('print_report') }}" target="_blank" class="btn btn-secondary">🖨️ Print</a>
+    </div>
+</div>
+
+<div style="background:#f0faf4; border:1.5px solid #b7e4c7; border-radius:10px; padding:.8rem 1.2rem; margin-bottom:1.5rem; font-size:.9rem; color:#1b4332;">
+    📊 <strong>{{ label }}</strong> &nbsp;·&nbsp; {{ start }} to {{ end }}
+</div>
+
+{% if alerts %}
+<div style="margin-bottom:1.2rem;">
+    {% for a in alerts %}
+    <div style="background:#fff3cd; border:1.5px solid #ffc107; border-left:5px solid #e67e22; border-radius:10px; padding:.8rem 1.2rem; margin-bottom:.5rem; font-size:.88rem;">
+        ⚠️ <strong>{{ a.food }}</strong>: {{ a.pct }}% waste rate (threshold: {{ WASTE_ALERT_PCT }}%)
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- KPI cards -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:1rem; margin-bottom:1.5rem;">
+    <div class="card" style="text-align:center; border-top:4px solid #52b788;">
+        <div style="font-size:1.8rem; font-weight:700; color:#2d6a4f;">{{ "%.1f"|format(total_prepared) }}</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">kg Prepared</div>
+    </div>
+    <div class="card" style="text-align:center; border-top:4px solid #e74c3c;">
+        <div style="font-size:1.8rem; font-weight:700; color:#c0392b;">{{ "%.1f"|format(total_wasted) }}</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">kg Wasted</div>
+    </div>
+    <div class="card" style="text-align:center; border-top:4px solid #3498db;">
+        <div style="font-size:1.8rem; font-weight:700; color:#1a5276;">{{ "%.1f"|format(total_donated) }}</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">kg Donated</div>
+    </div>
+    <div class="card" style="text-align:center; border-top:4px solid #e67e22;">
+        <div style="font-size:1.8rem; font-weight:700; color:#a04000;">{{ waste_pct }}%</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">Waste Rate</div>
+    </div>
+    <div class="card" style="text-align:center; border-top:4px solid #9b59b6;">
+        <div style="font-size:1.8rem; font-weight:700; color:#6c3483;">{{ total_records }}</div>
+        <div style="font-size:.82rem; color:#666; font-weight:600; margin-top:.2rem;">Records</div>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; margin-bottom:1.2rem;">
+
+    <!-- Food breakdown -->
+    <div class="card">
+        <h2 style="font-size:1rem; margin-bottom:1rem;">🍽️ Food Breakdown</h2>
+        {% if food_breakdown %}
+        <table>
+            <thead><tr><th>Food</th><th>Prepared</th><th>Wasted</th><th>Waste %</th></tr></thead>
+            <tbody>
+            {% for f in food_breakdown %}
+            {% set pct = f.waste_pct or 0 %}
+            <tr>
+                <td><strong>{{ f.food_name }}</strong></td>
+                <td>{{ f.prepared }} kg</td>
+                <td>{{ f.wasted }} kg</td>
+                <td><span class="badge {% if pct < 20 %}badge-green{% elif pct < 40 %}badge-orange{% else %}badge-red{% endif %}">{{ pct }}%{% if pct >= 40 %} ⚠️{% endif %}</span></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#999; text-align:center; padding:1rem;">No records for this period.</p>
+        {% endif %}
+    </div>
+
+    <!-- Daily breakdown -->
+    <div class="card">
+        <h2 style="font-size:1rem; margin-bottom:1rem;">📅 Day-by-Day</h2>
+        {% if daily_breakdown %}
+        <table>
+            <thead><tr><th>Date</th><th>Prepared</th><th>Wasted</th></tr></thead>
+            <tbody>
+            {% for d in daily_breakdown %}
+            <tr>
+                <td>{{ d.date }}</td>
+                <td><span class="badge badge-green">{{ d.prepared }} kg</span></td>
+                <td><span class="badge badge-red">{{ d.wasted }} kg</span></td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color:#999; text-align:center; padding:1rem;">No records for this period.</p>
+        {% endif %}
+    </div>
+
+</div>
+
+{% if top_donor %}
+<div class="card" style="background:linear-gradient(135deg,#e8f4fd,#dbeafe); border:none;">
+    <div style="display:flex; align-items:center; gap:1rem;">
+        <div style="font-size:2.5rem;">🏆</div>
+        <div>
+            <div style="font-weight:700; font-size:1rem;">Top Recipient This Period</div>
+            <div style="color:#1a5276; font-size:1.3rem; font-weight:700; margin-top:.2rem;">{{ top_donor.recipient }}</div>
+            <div style="color:#555; font-size:.88rem;">Received {{ top_donor.total }} kg of food</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

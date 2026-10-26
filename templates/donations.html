@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Donations – FoodWise{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+    <div style="display:flex; align-items:center; gap:1rem;">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back</a>
+        <h1 style="margin:0;">Donation Records</h1>
+    </div>
+    <a href="{{ url_for('donate') }}" class="btn btn-primary">+ Add Donation</a>
+</div>
+
+<div class="card">
+    {% if donations %}
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Food Name</th>
+                <th>Donated (kg)</th>
+                <th>Recipient</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in donations %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><strong>{{ d.food_name }}</strong></td>
+                <td><span class="badge badge-blue">{{ d.donated_qty }} kg</span></td>
+                <td>{{ d.recipient }}</td>
+                <td>{{ d.date }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">🤝</div>
+        <p>No donations recorded yet.</p>
+        <a href="{{ url_for('donate') }}" class="btn btn-primary" style="margin-top:1rem;">Record First Donation</a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

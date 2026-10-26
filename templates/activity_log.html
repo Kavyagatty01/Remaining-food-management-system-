@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Activity Log – FoodWise{% endblock %}
+{% block content %}
+
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.4rem;">
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← Back</a>
+    <h1 style="margin:0;">📝 Activity Log</h1>
+</div>
+
+<div class="card">
+{% if logs %}
+<table>
+    <thead><tr><th>#</th><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead>
+    <tbody>
+    {% for log in logs %}
+    <tr>
+        <td style="color:#999;font-size:.8rem;">{{ loop.index }}</td>
+        <td style="font-size:.82rem;color:#555;white-space:nowrap;">{{ log.timestamp }}</td>
+        <td><span class="badge badge-purple">{{ log.username }}</span></td>
+        <td>
+            {% if 'ADD' in log.action %}
+                <span class="badge badge-green">{{ log.action }}</span>
+            {% elif 'DELETE' in log.action %}
+                <span class="badge badge-red">{{ log.action }}</span>
+            {% elif 'EDIT' in log.action or 'UPDATE' in log.action %}
+                <span class="badge badge-orange">{{ log.action }}</span>
+            {% elif 'LOGIN' in log.action %}
+                <span class="badge badge-blue">{{ log.action }}</span>
+            {% else %}
+                <span class="badge badge-gray">{{ log.action }}</span>
+            {% endif %}
+        </td>
+        <td style="font-size:.85rem;color:#555;">{{ log.detail or '—' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <div class="icon">📝</div>
+    <p>No activity recorded yet. Actions will appear here once you start using the system.</p>
+</div>
+{% endif %}
+</div>
+{% endblock %}
